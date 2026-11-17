@@ -9,9 +9,16 @@ echo ">>> Baking snapshot ..."
 node tlsc-snapshot.js
 if [ $? -ne 0 ]; then echo "Bake FAILED"; exit 1; fi
 
-echo ">>> Commit + push gh-pages ..."
+echo ">>> Switching to gh-pages branch and pushing snapshot ..."
+git checkout -q gh-pages 2>/dev/null || git checkout -b gh-pages origin/gh-pages
+# Overwrite the site content (flatten site/ onto gh-pages root)
+cp -rf site/* . 2>/dev/null || true
+# Remove non-site artifacts that were left on this branch
+git clean -fdq 2>/dev/null || true
 git add -A
-git commit -q -m "chrono: snapshot $(date -u +%F)" 2>/dev/null || true
+if ! git commit -q -m "chrono: snapshot $(date -u +%F)" 2>/dev/null; then
+  echo "(nothing to commit)"; 
+fi
 git push -q origin gh-pages
 if [ $? -ne 0 ]; then echo "push FAILED"; exit 1; fi
 echo "DEPLOY OK — pushed gh-pages to GitHub Pages"
